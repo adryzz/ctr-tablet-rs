@@ -1,6 +1,5 @@
 use ctru::prelude::*;
 use ctru::services::hid::TouchPosition;
-use std::alloc::set_alloc_error_hook;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, Ipv4Addr, TcpStream, ToSocketAddrs};
 use std::time::Duration;
@@ -18,6 +17,8 @@ fn main() {
     let server = TcpListener::bind("0.0.0.0:5000").unwrap();
     server.set_nonblocking(true).unwrap();
 
+    println!("IP: {address}:5000");
+
     while apt.main_loop() {
         // Scan for user input on the current frame.
         hid.scan_input();
@@ -27,14 +28,10 @@ fn main() {
 
         let touch: (u16, u16) = TouchPosition::get(&mut TouchPosition::default());
 
-        // Clear the screen
-        console.clear();
-
         // We print these again because we just cleared the screen above
-        println!("IP: {address}:5000");
 
-        for stream in listener.incoming() {
-            handle_client(stream?, &touch);
+        for stream in server.incoming() {
+            handle_client(stream.unwrap(), &touch);
         }
 
         if keys.intersects(KeyPad::KEY_START) {
@@ -49,7 +46,16 @@ fn main() {
     }
 }
 
-fn handle_client(stream: TcpStream, touch: (u16, u16)) -> _ {
-    println!("Connected to {}", stream.peer_addr());
-    //stream.write(touch);
+fn handle_client(mut stream: TcpStream, touch: &(u16, u16)) {
+    println!("Connected to {}", stream.peer_addr().unwrap());
+
+    let mut packet: [u8; 4] = [0; 4];
+
+    packet[0] = touch.0 as u8;
+    packet[1] = (touch.0 >> 8) as u8;
+    packet[2] = touch.1 as u8;
+    packet[3] = (touch.1 >> 8) as u8;
+
+    stream.write(&packet);
+    stream.shutdown(Shutdown::Both).unwrap();
 }
