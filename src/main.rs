@@ -136,7 +136,8 @@ fn main() {
 
     fn setup(address: Ipv4Addr)
     {
-        println!("ctr-tablet-rs by Lena");
+        println!("ctr-tablet-rs v0.1.0 by Lena");
+        println!("https://github.com/adryzz/ctr-tablet-rs");
         println!("IP: {address}:5000");
         println!("Connect a PC to this console...");
         println!("Press START to exit or X to calibrate the display.");
