@@ -17,7 +17,14 @@ fn main() {
     let server = TcpListener::bind("0.0.0.0:5000").unwrap();
     server.set_nonblocking(true).unwrap();
 
+    println!("ctr-tablet-rs by Lena");
     println!("IP: {address}:5000");
+    println!("Connect a PC to this console...");
+    println!("Press START to exit.");
+
+    let mut connected = false;
+
+    let mut stream_or_none: Option<TcpStream> = None;
 
     while apt.main_loop() {
         // Scan for user input on the current frame.
@@ -28,15 +35,58 @@ fn main() {
 
         let touch: (u16, u16) = TouchPosition::get(&mut TouchPosition::default());
 
-        // We print these again because we just cleared the screen above
+        if (connected)
+        {
+            // Handle touch event
+            let mut arr: [u8; 4] = [0; 4];
+            arr[0] = touch.0 as u8;
+            arr[1] = (touch.0 >> 8) as u8;
+            arr[2] = touch.1 as u8;
+            arr[3] = (touch.1 >> 8) as u8;
 
-        for stream in server.incoming() {
-            handle_client(stream.unwrap(), &touch);
+            // Send stuff through tcp
+
+            if let Some(stream) = &mut stream_or_none {
+                stream.write(&arr);
+            } else {
+            println!("Disconnected from client.");
+            connected = false;
+            }
+        }
+        else 
+        {
+            // Accept connection if available
+            if let Ok((_socket, addr)) = server.accept() {
+                println!("Connected to {addr:?}");
+                println!("Press B to disconnect.");
+                stream_or_none = Some(_socket);
+                connected = true;
+            }
         }
 
+
+
+ 
         if keys.intersects(KeyPad::KEY_START) {
             println!("Exiting...");
+            if (connected)
+            {
+                if let Some(stream) = &stream_or_none {
+                    stream.shutdown(Shutdown::Both);
+                }
+                connected = false;
+            }
             break;
+        }
+        else if keys.intersects(KeyPad::KEY_B) {
+            if (connected)
+            {
+                println!("Disconnecting from client...");
+                if let Some(stream) = &stream_or_none {
+                    stream.shutdown(Shutdown::Both);
+                }
+                connected = false;
+            }
         }
 
         // Flush and swap framebuffers
@@ -44,18 +94,4 @@ fn main() {
         gfx.swap_buffers();
         gfx.wait_for_vblank();
     }
-}
-
-fn handle_client(mut stream: TcpStream, touch: &(u16, u16)) {
-    println!("Connected to {}", stream.peer_addr().unwrap());
-
-    let mut packet: [u8; 4] = [0; 4];
-
-    packet[0] = touch.0 as u8;
-    packet[1] = (touch.0 >> 8) as u8;
-    packet[2] = touch.1 as u8;
-    packet[3] = (touch.1 >> 8) as u8;
-
-    stream.write(&packet);
-    stream.shutdown(Shutdown::Both).unwrap();
 }
