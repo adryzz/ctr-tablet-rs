@@ -1,6 +1,8 @@
 use ctru::prelude::*;
 use ctru::services::hid::TouchPosition;
-use std::net::{Shutdown, TcpListener, Ipv4Addr};
+use std::alloc::set_alloc_error_hook;
+use std::io::Write;
+use std::net::{Shutdown, TcpListener, Ipv4Addr, TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 fn main() {
@@ -31,6 +33,10 @@ fn main() {
         // We print these again because we just cleared the screen above
         println!("IP: {address}:5000");
 
+        for stream in listener.incoming() {
+            handle_client(stream?, &touch);
+        }
+
         if keys.intersects(KeyPad::KEY_START) {
             println!("Exiting...");
             break;
@@ -41,4 +47,9 @@ fn main() {
         gfx.swap_buffers();
         gfx.wait_for_vblank();
     }
+}
+
+fn handle_client(stream: TcpStream, touch: (u16, u16)) -> _ {
+    println!("Connected to {}", stream.peer_addr());
+    //stream.write(touch);
 }
