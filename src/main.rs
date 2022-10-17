@@ -2,6 +2,7 @@ use ctru::prelude::*;
 use ctru::services::hid::TouchPosition;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, Ipv4Addr, TcpStream, ToSocketAddrs};
+use std::primitive;
 use std::time::Duration;
 
 fn main() {
@@ -17,14 +18,15 @@ fn main() {
     let server = TcpListener::bind("0.0.0.0:5000").unwrap();
     server.set_nonblocking(true).unwrap();
 
-    println!("ctr-tablet-rs by Lena");
-    println!("IP: {address}:5000");
-    println!("Connect a PC to this console...");
-    println!("Press START to exit.");
+    setup(address);
 
     let mut connected = false;
 
     let mut stream_or_none: Option<TcpStream> = None;
+
+    let mut calibration_step = 0;
+
+    let mut last_keys = KeyPad::empty();
 
     while apt.main_loop() {
         // Scan for user input on the current frame.
@@ -51,6 +53,8 @@ fn main() {
             } else {
             println!("Disconnected from client.");
             connected = false;
+            console.clear();
+            setup(address);
             }
         }
         else 
@@ -64,34 +68,83 @@ fn main() {
             }
         }
 
-
-
- 
-        if keys.intersects(KeyPad::KEY_START) {
-            println!("Exiting...");
-            if (connected)
-            {
-                if let Some(stream) = &stream_or_none {
-                    stream.shutdown(Shutdown::Both);
+        
+        if (keys != last_keys)
+        {
+            if keys.intersects(KeyPad::KEY_START) {
+                println!("Exiting...");
+                if (connected)
+                {
+                    if let Some(stream) = &stream_or_none {
+                        stream.shutdown(Shutdown::Both);
+                    }
+                    connected = false;
                 }
-                connected = false;
+                break;
             }
-            break;
-        }
-        else if keys.intersects(KeyPad::KEY_B) {
-            if (connected)
-            {
-                println!("Disconnecting from client...");
-                if let Some(stream) = &stream_or_none {
-                    stream.shutdown(Shutdown::Both);
+            else if keys.intersects(KeyPad::KEY_B) {
+                if (connected)
+                {
+                    console.clear();
+                    println!("Disconnecting from client...");
+                    if let Some(stream) = &stream_or_none {
+                        stream.shutdown(Shutdown::Both);
+                    }
+                    connected = false;
+                    setup(address);
                 }
-                connected = false;
+            }
+            else if keys.intersects(KeyPad::KEY_X) && calibration_step == 0 {
+                println!("Display calibration");
+                println!("Press and hold the stylus on the top left corner of the screen, then press A.");
+                calibration_step = 1;
+            }
+            else if keys.intersects(KeyPad::KEY_A) {
+                if calibration_step == 1
+                {
+                    println!("\u{001b}[32mTop left: ({}, {})\u{001b}[0m", touch.0, touch.1);
+                    println!("Now press and hold the stylus on the top right corner of the screen, then press A.");
+                    calibration_step = 2;
+                }
+                else if calibration_step == 2 {
+                    println!("\u{001b}[32mTop right: ({}, {})\u{001b}[0m", touch.0, touch.1);
+                    println!("Now press and hold the stylus on the bottom left corner of the screen, then press A.");
+                    calibration_step = 3;
+                }
+                else if calibration_step == 3 {
+                    println!("\u{001b}[32mBottom left: ({}, {})\u{001b}[0m", touch.0, touch.1);
+                    println!("Now press and hold the stylus on the bottom right corner of the screen, then press A.");
+                    calibration_step = 4;
+                }
+                else if calibration_step == 4 {
+                    println!("\u{001b}[32mBottom right: ({}, {})\u{001b}[0m", touch.0, touch.1);
+                    println!("Calibration completed!");
+                    calibration_step = 0;
+                }
             }
         }
+
+        
+
+        last_keys = keys;
 
         // Flush and swap framebuffers
         gfx.flush_buffers();
         gfx.swap_buffers();
         gfx.wait_for_vblank();
+    }
+
+    fn setup(address: Ipv4Addr)
+    {
+        println!("ctr-tablet-rs by Lena");
+        println!("IP: {address}:5000");
+        println!("Connect a PC to this console...");
+        println!("Press START to exit or X to calibrate the display.");
+
+        println!("\u{001b}[46;1m                \u{001b}[0m");
+        println!("\u{001b}[45;1m                \u{001b}[0m");
+        println!("\u{001b}[47m                \u{001b}[0m");
+        println!("\u{001b}[45;1m                \u{001b}[0m");
+        println!("\u{001b}[46;1m                \u{001b}[0m");
     }
 }
