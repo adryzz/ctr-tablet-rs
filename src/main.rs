@@ -57,6 +57,11 @@ fn main() {
             // Accept connection if available
             if let Ok((_socket, addr)) = server.accept() {
                 println!("Connected to {addr:?}");
+
+                if let Err(e) = _socket.set_nodelay(true)
+                {
+                    println!("Failed to set TCP_NODELAY. Expect higher latencies.")
+                }
                 println!("Press B to disconnect.");
                 stream_or_none = Some(_socket);
                 connected = true;
