@@ -22,7 +22,7 @@ checksum = "a1d3d68618a1f2c2d86e0bd2adec82e31960ca11aaeb5f353ff01746a4e08f36"
 
 [[package]]
 name = "ctr-tablet-rs"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bitflags",
  "ctru-rs",
