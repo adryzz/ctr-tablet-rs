@@ -66,7 +66,7 @@ You will need:
 
 - Go to the file `OpenTabletDriver/Devices/Nintendo3ds/Nintendo3dsInterfaceStream.cs` and change the `IPAddress` line with your 3DS's IP address that you can see on screen. (my 3DS had `10.0.0.5:5000`, so it became `{10, 0, 0, 5}`.
 
-- (Optional) Search on google the dimensions of the lower screen of your particular 3DS variant (the one in the code is an old3ds XL) and replace the values found in `https://github.com/adryzz/OpenTabletDriver/blob/3ds/OpenTabletDriver.Configurations/Configurations/Nintendo/3ds.json`.
+- (Optional) Search on google the dimensions of the lower screen of your particular 3DS variant (the one in the code is an old3ds XL) and replace the values found in `OpenTabletDriver.Configurations/Configurations/Nintendo/3ds.json`.
 
 - Make sure no other instance of OpenTabletDriver is running
 
